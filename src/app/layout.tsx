@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import Banner from "@/components/banner";
+import Navbar from "@/components/navbar";
 import "./globals.css";
 
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Empty",
-  description: "This is an empty project",
+  title: "Kino",
+  description: "Kino is a movie and TV show streaming service.",
 };
 
 export default function RootLayout({
@@ -12,8 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <div className="absolute w-full top-0">
+          <Banner />
+          <Navbar />
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

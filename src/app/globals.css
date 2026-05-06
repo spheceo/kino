@@ -1,11 +1,25 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-background: #141414;
 }
 
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--color-background);
+  color: #fff;
+}
+
+.bg-blur {
+  backdrop-filter: blur(4px);
+}
+
+.bg-blur-dark {
+  backdrop-filter: blur(10px);
+  background-color: #25252570;
+}
+
+.bg-blur-light {
+  backdrop-filter: blur(10px);
+  background-color: #ffffff9f;
 }

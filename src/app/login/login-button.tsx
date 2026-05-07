@@ -34,7 +34,7 @@ export function GoogleLoginButton() {
         type="button"
         onClick={signInWithGoogle}
         disabled={isLoading}
-        className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-white px-7 font-semibold text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70"
+        className="flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-full bg-white px-7 font-semibold text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70"
       >
         <FcGoogle size={24} />
         {isLoading ? "Opening Google..." : "Continue with Google"}

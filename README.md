@@ -18,7 +18,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 Required Convex environment values:
 
 ```bash
-bun x convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
+bun x convex env set BETTER_AUTH_SECRET "..."
 bun x convex env set SITE_URL "http://localhost:3000"
 bun x convex env set GOOGLE_CLIENT_ID "..."
 bun x convex env set GOOGLE_CLIENT_SECRET "..."
@@ -39,6 +39,7 @@ bun x convex dev
 ## TODO
 
 - Support an `In Theaters` / `Now Playing` badge using TMDB `movie/now_playing` and regional `movie/{id}/release_dates` theatrical release data.
+- Support streaming availability/provider badges using TMDB `/{movie|tv}/{id}/watch/providers`, checking regional `flatrate`, `rent`, `buy`, `ads`, and `free` provider lists for services like Netflix, Disney+, Prime Video, and Apple TV+.
 
 ## Recommendation Algorithm Idea
 

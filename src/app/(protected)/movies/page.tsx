@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { IoMdInformationCircleOutline } from "react-icons/io";
+import { ContinueWatchingList } from "@/components/continue-watching-list";
 import { HeroPreview } from "@/components/hero-preview";
 import { MediaRow } from "@/components/media-row";
 import { WatchNow } from "@/components/watch-now";
@@ -118,6 +119,7 @@ export default async function MoviesPage() {
       ) : null}
 
       <div className="relative space-y-10 px-10">
+        <ContinueWatchingList mediaType="movie" className="pt-2" />
         {rows.map((row) => (
           <MediaRow key={row.title} row={row} />
         ))}

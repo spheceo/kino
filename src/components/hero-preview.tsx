@@ -74,8 +74,6 @@ export function HeroPreview({
   const hideTimerRef = useRef<number | null>(null);
   const hasStartedPreviewRef = useRef(false);
   const [isPlayable, setIsPlayable] = useState(false);
-  const [isFrameLoaded, setIsFrameLoaded] = useState(false);
-  const [isFallbackReady, setIsFallbackReady] = useState(false);
   const [isDelayElapsed, setIsDelayElapsed] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -207,14 +205,8 @@ export function HeroPreview({
       () => setIsDelayElapsed(true),
       PREVIEW_DELAY_SECONDS * 1000,
     );
-    const fallbackTimer = window.setTimeout(
-      () => setIsFallbackReady(true),
-      3000,
-    );
-
     return () => {
       window.clearTimeout(previewTimer);
-      window.clearTimeout(fallbackTimer);
     };
   }, []);
 
@@ -222,7 +214,7 @@ export function HeroPreview({
     if (
       !(
         isDelayElapsed &&
-        (isPlayable || isFrameLoaded || isFallbackReady) &&
+        isPlayable &&
         !hasStartedPreviewRef.current
       )
     ) {
@@ -261,7 +253,7 @@ export function HeroPreview({
       hidePreview,
       PREVIEW_DURATION_SECONDS * 1000,
     );
-  }, [isPlayable, isFrameLoaded, isFallbackReady, isDelayElapsed, hidePreview]);
+  }, [isPlayable, isDelayElapsed, hidePreview]);
 
   useEffect(() => {
     return () => {
@@ -314,7 +306,6 @@ export function HeroPreview({
         style={iframeStyle}
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
-        onLoad={() => setIsFrameLoaded(true)}
       />
       <div
         ref={heroContentRef}

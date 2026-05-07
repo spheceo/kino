@@ -174,6 +174,7 @@ export default async function InfoPage({
           mediaType={film.mediaType}
           season={defaultSeason}
           episode={defaultEpisode}
+          title={title}
         />
       </section>
     </main>

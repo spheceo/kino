@@ -71,6 +71,37 @@ export const tables = {
     createdAt: v.number(),
     expiresAt: v.optional(v.union(v.null(), v.number())),
   }),
+  watchLater: defineTable({
+    userId: v.string(),
+    itemKey: v.string(),
+    mediaType: v.union(v.literal("movie"), v.literal("tv")),
+    tmdbId: v.string(),
+    title: v.string(),
+    seasonNumber: v.optional(v.number()),
+    episodeNumber: v.optional(v.number()),
+    visible: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user_key", ["userId", "itemKey"])
+    .index("by_user_updated", ["userId", "updatedAt"]),
+  continueWatching: defineTable({
+    userId: v.string(),
+    progressKey: v.string(),
+    mediaType: v.union(v.literal("movie"), v.literal("tv")),
+    tmdbId: v.string(),
+    title: v.optional(v.string()),
+    seasonNumber: v.optional(v.number()),
+    episodeNumber: v.optional(v.number()),
+    progressSeconds: v.number(),
+    durationSeconds: v.number(),
+    paused: v.boolean(),
+    completed: v.boolean(),
+    visible: v.optional(v.boolean()),
+    updatedAt: v.number(),
+  })
+    .index("by_user_key", ["userId", "progressKey"])
+    .index("by_user_updated", ["userId", "updatedAt"]),
 };
 
 const schema = defineSchema(tables);

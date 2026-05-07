@@ -25,7 +25,7 @@ export default function Navbar() {
         />
       </Link>
       <Navlinks nav={nav} />
-      <div className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex items-center gap-5">
         <Suspense>
           <Search />
         </Suspense>

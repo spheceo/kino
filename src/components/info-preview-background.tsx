@@ -64,8 +64,6 @@ export function InfoPreviewBackground({
   const hideTimerRef = useRef<number | null>(null);
   const hasStartedPreviewRef = useRef(false);
   const [isPlayable, setIsPlayable] = useState(false);
-  const [isFrameLoaded, setIsFrameLoaded] = useState(false);
-  const [isFallbackReady, setIsFallbackReady] = useState(false);
   const [isDelayElapsed, setIsDelayElapsed] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [videoAspectRatio, setVideoAspectRatio] = useState(
@@ -204,14 +202,8 @@ export function InfoPreviewBackground({
       () => setIsDelayElapsed(true),
       PREVIEW_DELAY_SECONDS * 1000,
     );
-    const fallbackTimer = window.setTimeout(
-      () => setIsFallbackReady(true),
-      3000,
-    );
-
     return () => {
       window.clearTimeout(previewTimer);
-      window.clearTimeout(fallbackTimer);
     };
   }, [isImageLoaded]);
 
@@ -220,7 +212,7 @@ export function InfoPreviewBackground({
       !(
         isImageLoaded &&
         isDelayElapsed &&
-        (isPlayable || isFrameLoaded || isFallbackReady) &&
+        isPlayable &&
         !hasStartedPreviewRef.current
       )
     ) {
@@ -247,8 +239,6 @@ export function InfoPreviewBackground({
   }, [
     isImageLoaded,
     isPlayable,
-    isFrameLoaded,
-    isFallbackReady,
     isDelayElapsed,
     hidePreview,
     setPreviewing,
@@ -291,7 +281,6 @@ export function InfoPreviewBackground({
         style={iframeStyle}
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
-        onLoad={() => setIsFrameLoaded(true)}
       />
     </>
   );

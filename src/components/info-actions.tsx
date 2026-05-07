@@ -1,8 +1,11 @@
 "use client";
 
+import { useMutation, useQuery } from "convex/react";
+import gsap from "gsap";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { IoAdd, IoPlay, IoVolumeHigh, IoVolumeMute } from "react-icons/io5";
+import { useEffect, useRef, useState } from "react";
+import { IoAdd, IoCheckmark, IoPlay, IoVolumeHigh, IoVolumeMute } from "react-icons/io5";
+import { api } from "../../convex/_generated/api";
 
 const PREVIEW_STATE_EVENT = "kino:info-preview-state";
 const PREVIEW_MUTED_EVENT = "kino:info-preview-muted";
@@ -28,6 +31,7 @@ type InfoActionsProps = {
   mediaType: "movie" | "tv";
   season?: number;
   episode?: number;
+  title: string;
 };
 
 function postPreviewCommand(command: { type: string; muted?: boolean }) {
@@ -65,10 +69,27 @@ export function InfoActions({
   mediaType,
   season,
   episode,
+  title,
 }: InfoActionsProps) {
+  const iconRef = useRef<HTMLDivElement>(null);
+  const toggleWatchLater = useMutation(api.watchLater.toggle);
   const contentIdString = String(contentId);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const saved = useQuery(api.watchLater.isSaved, {
+    mediaType,
+    tmdbId: contentIdString,
+    seasonNumber: season,
+    episodeNumber: episode,
+  });
+  const [optimisticSaved, setOptimisticSaved] = useState(false);
+  const isSaved = saved ?? optimisticSaved;
+
+  useEffect(() => {
+    if (saved !== undefined) {
+      setOptimisticSaved(saved);
+    }
+  }, [saved]);
 
   useEffect(() => {
     function handlePreviewState(event: Event) {
@@ -122,6 +143,26 @@ export function InfoActions({
     postPreviewCommand({ type: "kino:set-muted", muted: nextMuted });
   }
 
+  async function handleWatchLater() {
+    const nextSaved = !isSaved;
+    setOptimisticSaved(nextSaved);
+
+    gsap.fromTo(
+      iconRef.current,
+      { rotate: 0, scale: 0.8, opacity: 0.4 },
+      { rotate: 360, scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.8)" },
+    );
+
+    const result = await toggleWatchLater({
+      mediaType,
+      tmdbId: contentIdString,
+      title,
+      seasonNumber: season,
+      episodeNumber: episode,
+    });
+    setOptimisticSaved(result);
+  }
+
   const watchHref =
     mediaType === "tv"
       ? `/watch/tv/${encodeURIComponent(contentIdString)}/${encodeURIComponent(String(season ?? 1))}/${encodeURIComponent(String(episode ?? 1))}`
@@ -136,9 +177,16 @@ export function InfoActions({
         <IoPlay size={22} />
         Watch Now
       </Link>
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2c2c2c] text-white">
-        <IoAdd size={34} />
-      </div>
+      <button
+        type="button"
+        aria-label={isSaved ? "Remove from watch later" : "Add to watch later"}
+        onClick={handleWatchLater}
+        className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-[#2c2c2c] text-white transition-colors hover:bg-[#3a3a3a]"
+      >
+        <div ref={iconRef}>
+          {isSaved ? <IoCheckmark size={34} /> : <IoAdd size={34} />}
+        </div>
+      </button>
       {isPreviewing ? (
         <button
           type="button"

@@ -45,8 +45,8 @@ export default async function LoginPage() {
           className="absolute inset-0 h-full w-full object-cover opacity-55"
         />
       ) : null}
-      <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/20" />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/40" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />
 
       <section className="relative z-10 flex w-full max-w-[460px] flex-col gap-8">
         <Image
@@ -54,7 +54,7 @@ export default async function LoginPage() {
           alt="Kino"
           width={154}
           height={60}
-          className="h-9 w-auto"
+          className="h-9 w-auto self-start"
           priority
         />
         <div className="flex flex-col gap-4">

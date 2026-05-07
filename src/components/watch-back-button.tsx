@@ -1,23 +1,25 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { IoArrowBack } from "react-icons/io5";
 
 export function WatchBackButton() {
-  function goBackWithRefresh() {
+  const router = useRouter();
+
+  function goBack() {
     if (window.history.length > 1) {
-      window.history.back();
-      window.setTimeout(() => window.location.reload(), 250);
+      router.back();
       return;
     }
 
-    window.location.assign("/");
+    router.replace("/");
   }
 
   return (
     <button
       type="button"
       aria-label="Go back"
-      onClick={goBackWithRefresh}
+      onClick={goBack}
       className="absolute left-5 top-5 z-50 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-md transition-colors hover:bg-black/75"
     >
       <IoArrowBack size={24} />

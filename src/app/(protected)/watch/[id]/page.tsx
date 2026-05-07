@@ -1,31 +1,61 @@
 import { notFound } from "next/navigation";
+import { RemoveWatchStartParam } from "@/components/remove-watch-start-param";
 import { WatchBackButton } from "@/components/watch-back-button";
+import { WatchPlayerFrame } from "@/components/watch-player-frame";
+import { WatchProgressListener } from "@/components/watch-progress-listener";
+import { api } from "../../../../../convex/_generated/api";
+import { fetchAuthQuery } from "@/lib/auth-server";
+import { env } from "@/lib/env";
 
 type WatchPageProps = {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{
+    start?: string;
+  }>;
 };
 
-export default async function WatchPage({ params }: WatchPageProps) {
+async function getMovieTitle(id: string) {
+  const res = await fetch(
+    `https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}?api_key=${env.NEXT_PUBLIC_TMDB_KEY}&language=en-US`,
+    { cache: "no-store" },
+  );
+
+  if (!res.ok) {
+    return `Movie ${id}`;
+  }
+
+  const data = (await res.json()) as { title?: string };
+  return data.title ?? `Movie ${id}`;
+}
+
+export default async function WatchPage({ params, searchParams }: WatchPageProps) {
   const { id } = await params;
+  const { start } = await searchParams;
 
   if (!/^\d+$/.test(id)) {
     notFound();
   }
 
-  const streamUrl = `https://kino-api.up.railway.app/movie/${encodeURIComponent(id)}`;
+  const [title, progress] = await Promise.all([
+    getMovieTitle(id),
+    fetchAuthQuery(api.continueWatching.getForCurrentUser, {
+      mediaType: "movie",
+      tmdbId: id,
+    }),
+  ]);
+  const incomingStartSeconds = start && /^\d+$/.test(start) ? Number(start) : null;
+  const startSeconds = Math.floor(incomingStartSeconds ?? progress?.progressSeconds ?? 0);
+  const startParam = startSeconds > 0 ? `?start=${encodeURIComponent(String(startSeconds))}` : "";
+  const streamUrl = `https://kino-api.up.railway.app/movie/${encodeURIComponent(id)}${startParam}`;
 
   return (
     <main className="relative h-dvh bg-black">
       <WatchBackButton />
-      <iframe
-        src={streamUrl}
-        title="Kino video player"
-        className="h-full w-full border-0"
-        allow="autoplay; fullscreen; picture-in-picture"
-        allowFullScreen
-      />
+      <RemoveWatchStartParam />
+      <WatchProgressListener title={title} />
+      <WatchPlayerFrame src={streamUrl} />
     </main>
   );
 }

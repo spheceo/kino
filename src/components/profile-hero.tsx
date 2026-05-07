@@ -26,22 +26,7 @@ export function ProfileHero() {
 
     async function load() {
       if (!mostRecent) {
-        const res = await fetch(
-          `https://api.themoviedb.org/3/trending/all/day?api_key=${key}&language=en-US`,
-        );
-
-        if (!res.ok || cancelled) return;
-
-        const data = (await res.json()) as {
-          results?: Array<{ backdrop_path?: string | null }>;
-        };
-        const backdrops = data.results?.filter((item) => item.backdrop_path) ?? [];
-        const random = backdrops[Math.floor(Math.random() * backdrops.length)];
-        const path = random?.backdrop_path ?? null;
-
-        if (!cancelled && path) {
-          setBackdropUrl(`https://image.tmdb.org/t/p/w1280${path}`);
-        }
+        setBackdropUrl(null);
         return;
       }
 

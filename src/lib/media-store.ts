@@ -118,6 +118,13 @@ export async function saveContinueWatching(userId: string, args: SaveProgressArg
   return await db.insert(continueWatching).values({ id: randomUUID(), ...value });
 }
 
+export async function hideContinueWatchingById(userId: string, id: string) {
+  return await db
+    .update(continueWatching)
+    .set({ visible: false })
+    .where(and(eq(continueWatching.userId, userId), eq(continueWatching.id, id)));
+}
+
 export async function hideContinueWatching(userId: string, args: ProgressIdentity) {
   return await db
     .update(continueWatching)

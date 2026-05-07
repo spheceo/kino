@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { IoImageOutline } from "react-icons/io5";
+import { prefetchStream } from "@/lib/prefetch-stream";
 
 type MediaCardProps = {
   id: string | number;
@@ -24,6 +27,8 @@ export default function MediaCard({
   return (
     <Link
       href={href}
+      onMouseEnter={() => prefetchStream(mediaType, id)}
+      onFocus={() => prefetchStream(mediaType, id)}
       className={`group relative block aspect-[2/3] overflow-hidden rounded-xl border border-[#090909] bg-[#232323] ${className}`}
     >
       {posterPath ? (

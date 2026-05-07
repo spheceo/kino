@@ -47,6 +47,25 @@ export function WatchPlayerFrame({
       togglePlayback();
     }
 
+    function syncPlayerShareMetadata(nextCopyUrl = window.location.href) {
+      iframeRef.current?.contentWindow?.postMessage(
+        {
+          type: "kino:set-share-metadata",
+          title,
+          copyUrl: nextCopyUrl,
+        },
+        "*",
+      );
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "kino:set-title", title },
+        "*",
+      );
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "kino:set-copy-url", copyUrl: nextCopyUrl },
+        "*",
+      );
+    }
+
     function handleMessage(event: MessageEvent) {
       if (event.data?.type !== "kino:episode-changed" || mediaType !== "tv") {
         return;
@@ -61,10 +80,12 @@ export function WatchPlayerFrame({
 
       const nextUrl = `/watch/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(String(seasonNumber))}/${encodeURIComponent(String(episodeNumber))}`;
       window.history.replaceState(window.history.state, "", nextUrl);
+      syncPlayerShareMetadata(window.location.href);
     }
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("message", handleMessage);
+    syncPlayerShareMetadata();
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
@@ -96,6 +117,14 @@ export function WatchPlayerFrame({
         onLoad={() => {
           setIsLoaded(true);
           shellRef.current?.focus();
+          iframeRef.current?.contentWindow?.postMessage(
+            {
+              type: "kino:set-share-metadata",
+              title,
+              copyUrl: window.location.href,
+            },
+            "*",
+          );
         }}
       />
     </div>

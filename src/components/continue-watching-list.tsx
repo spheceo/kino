@@ -33,7 +33,13 @@ type TmdbImages = {
   }>;
 };
 
-function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
+function ContinueWatchingCard({
+  item,
+  onRemove,
+}: {
+  item: ContinueWatchingItem;
+  onRemove: (item: ContinueWatchingItem) => void;
+}) {
   const [backdropPath, setBackdropPath] = useState<string | null>(null);
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
@@ -94,18 +100,9 @@ function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
       ? `${item.title ?? `Show ${item.tmdbId}`} · S${item.seasonNumber ?? 1} E${item.episodeNumber ?? 1}`
       : (item.title ?? `Movie ${item.tmdbId}`);
 
-  async function removeFromList() {
-    await fetch("/api/continue-watching", {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        mediaType: item.mediaType,
-        tmdbId: item.tmdbId,
-        seasonNumber: item.seasonNumber ?? undefined,
-        episodeNumber: item.episodeNumber ?? undefined,
-      }),
-    });
+  function removeFromList() {
     setIsConfirmingRemove(false);
+    onRemove(item);
   }
 
   return (
@@ -196,10 +193,24 @@ export function ContinueWatchingList({
 }) {
   const params = new URLSearchParams({ limit: "8" });
   if (mediaType) params.set("mediaType", mediaType);
-  const { data: items, isLoading } = useApiQuery<ContinueWatchingItem[]>(
-    `/api/continue-watching?${params.toString()}`,
-    [],
-  );
+  const { data: items, isLoading, setData: setItems } = useApiQuery<
+    ContinueWatchingItem[]
+  >(`/api/continue-watching?${params.toString()}`, []);
+
+  async function removeItem(item: ContinueWatchingItem) {
+    const previousItems = items;
+    setItems(items.filter((current) => current.id !== item.id));
+
+    const res = await fetch("/api/continue-watching", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: item.id }),
+    });
+
+    if (!res.ok) {
+      setItems(previousItems);
+    }
+  }
 
   if (isLoading) {
     return <ContinueWatchingSkeleton />;
@@ -214,7 +225,7 @@ export function ContinueWatchingList({
       <h2 className="text-2xl font-semibold">Continue Watching</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item) => (
-          <ContinueWatchingCard key={item.id} item={item} />
+          <ContinueWatchingCard key={item.id} item={item} onRemove={removeItem} />
         ))}
       </div>
     </section>

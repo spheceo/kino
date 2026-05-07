@@ -1,13 +1,17 @@
 "use client";
 
-import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import MediaCard from "@/components/media-card";
-import { api } from "../../convex/_generated/api";
+import { WatchLaterSkeleton } from "@/components/page-skeletons";
+import { useApiQuery } from "@/lib/client-data";
+import { env } from "@/lib/env";
 
-type WatchLaterItem = NonNullable<
-  ReturnType<typeof useQuery<typeof api.watchLater.listForCurrentUser>>
->[number];
+type WatchLaterItem = {
+  id: string;
+  mediaType: "movie" | "tv";
+  tmdbId: string;
+  title: string;
+};
 
 type TmdbDetails = {
   poster_path?: string | null;
@@ -23,8 +27,7 @@ function WatchLaterCard({ item }: { item: WatchLaterItem }) {
     let cancelled = false;
 
     async function loadDetails() {
-      const key = process.env.NEXT_PUBLIC_TMDB_KEY;
-      if (!key) return;
+      const key = env.NEXT_PUBLIC_TMDB_KEY;
 
       const res = await fetch(
         `https://api.themoviedb.org/3/${item.mediaType}/${encodeURIComponent(item.tmdbId)}?api_key=${key}&language=en-US`,
@@ -64,9 +67,16 @@ function WatchLaterCard({ item }: { item: WatchLaterItem }) {
 }
 
 export function WatchLaterList() {
-  const items = useQuery(api.watchLater.listForCurrentUser, { limit: 8 });
+  const { data: items, isLoading } = useApiQuery<WatchLaterItem[]>(
+    "/api/watch-later?limit=8",
+    [],
+  );
 
-  if (items === undefined || items.length === 0) {
+  if (isLoading) {
+    return <WatchLaterSkeleton />;
+  }
+
+  if (items.length === 0) {
     return null;
   }
 
@@ -75,7 +85,7 @@ export function WatchLaterList() {
       <h2 className="text-2xl font-semibold">Watch Later</h2>
       <div className="mt-4 grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
         {items.map((item) => (
-          <WatchLaterCard key={item._id} item={item} />
+          <WatchLaterCard key={item.id} item={item} />
         ))}
       </div>
     </section>

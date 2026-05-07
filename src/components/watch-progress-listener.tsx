@@ -1,8 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
 import { useEffect, useRef } from "react";
-import { api } from "../../convex/_generated/api";
 
 type WatchProgressEvent = {
   type:
@@ -49,7 +47,6 @@ function isWatchProgressEvent(value: unknown): value is WatchProgressEvent {
 }
 
 export function WatchProgressListener({ title }: { title: string }) {
-  const saveProgress = useMutation(api.continueWatching.saveProgress);
   const lastSavedAtRef = useRef(0);
   const latestEventRef = useRef<WatchProgressEvent | null>(null);
 
@@ -57,7 +54,10 @@ export function WatchProgressListener({ title }: { title: string }) {
     function save(event: WatchProgressEvent) {
       latestEventRef.current = event;
 
-      void saveProgress({
+      void fetch("/api/continue-watching", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
         mediaType: event.mediaType,
         tmdbId: String(event.tmdbId),
         title,
@@ -67,6 +67,8 @@ export function WatchProgressListener({ title }: { title: string }) {
         duration: optionalFiniteNumber(event.duration),
         paused: event.paused,
         completed: event.type === "kino:ended",
+        eventType: event.type.replace("kino:", ""),
+        }),
       });
 
       lastSavedAtRef.current = Date.now();
@@ -101,7 +103,7 @@ export function WatchProgressListener({ title }: { title: string }) {
       window.removeEventListener("message", onMessage);
       window.removeEventListener("pagehide", saveLatest);
     };
-  }, [saveProgress, title]);
+  }, [title]);
 
   return null;
 }

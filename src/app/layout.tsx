@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
+import { SmoothScrollProvider } from "@/components/smooth-scroll-provider";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ConvexClientProvider } from "@/components/convex-client-provider";
-import { getToken } from "@/lib/auth-server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,21 +18,17 @@ export const metadata: Metadata = {
   description: "Kino is a movie and TV show streaming service.",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const token = await getToken();
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ConvexClientProvider initialToken={token}>
-          {children}
-        </ConvexClientProvider>
+        <SmoothScrollProvider>{children}</SmoothScrollProvider>
       </body>
     </html>
   );

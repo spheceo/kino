@@ -62,6 +62,7 @@ export function InfoPreviewBackground({
   const imageRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
   const hideTimerRef = useRef<number | null>(null);
+  const playableTimerRef = useRef<number | null>(null);
   const hasStartedPreviewRef = useRef(false);
   const [isPlayable, setIsPlayable] = useState(false);
   const [isDelayElapsed, setIsDelayElapsed] = useState(false);
@@ -69,6 +70,7 @@ export function InfoPreviewBackground({
   const [videoAspectRatio, setVideoAspectRatio] = useState(
     DEFAULT_VIDEO_ASPECT_RATIO,
   );
+  const [defaultMuted, setDefaultMuted] = useState(true);
   const previewStart = useMemo(
     () => getPreviewStart(contentId, runtime),
     [contentId, runtime],
@@ -79,7 +81,7 @@ export function InfoPreviewBackground({
       ? `/tv/${encodeURIComponent(contentId)}/${encodeURIComponent(String(season))}/${encodeURIComponent(String(episode))}`
       : `/movie/${encodeURIComponent(contentId)}`;
 
-  const previewUrl = `https://kino-api.up.railway.app${previewPath}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=true`;
+  const previewUrl = `https://kino-api.up.railway.app${previewPath}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=${defaultMuted}`;
 
   const matchesContentId = useCallback(
     (eventData: MessageEvent["data"]) => {
@@ -145,11 +147,28 @@ export function InfoPreviewBackground({
   }, [setPreviewing]);
 
   useEffect(() => {
+    setIsPlayable(false);
+    hasStartedPreviewRef.current = false;
+
+    async function loadPreferences() {
+      const res = await fetch("/api/user-preferences");
+      if (res.ok) {
+        const data = (await res.json()) as { previewsMutedByDefault?: boolean };
+        setDefaultMuted(data.previewsMutedByDefault ?? true);
+      }
+    }
+
+    void loadPreferences();
+
     function handleMessage(event: MessageEvent) {
       if (
         event.data?.type === "kino:playable" &&
         matchesContentId(event.data)
       ) {
+        if (playableTimerRef.current) {
+          window.clearTimeout(playableTimerRef.current);
+          playableTimerRef.current = null;
+        }
         setIsPlayable(true);
       }
 
@@ -189,8 +208,18 @@ export function InfoPreviewBackground({
       }
     }
 
+    playableTimerRef.current = window.setTimeout(() => {
+      setIsPlayable(true);
+    }, 4500);
+
     window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    return () => {
+      if (playableTimerRef.current) {
+        window.clearTimeout(playableTimerRef.current);
+        playableTimerRef.current = null;
+      }
+      window.removeEventListener("message", handleMessage);
+    };
   }, [contentId, episode, hidePreview, matchesContentId, mediaType, season]);
 
   useEffect(() => {
@@ -277,7 +306,7 @@ export function InfoPreviewBackground({
         ref={previewRef}
         src={previewUrl}
         title="Kino preview player"
-        className="absolute left-1/2 top-1/2 z-0 border-0 opacity-0 -translate-x-1/2 -translate-y-1/2"
+        className="absolute left-1/2 top-1/2 z-0 border-0 opacity-0 -translate-x-1/2 -translate-y-1/2 will-change-transform"
         style={iframeStyle}
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen

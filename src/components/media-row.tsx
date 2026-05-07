@@ -1,4 +1,5 @@
 import MediaCard from "@/components/media-card";
+import { MediaRowScroll } from "@/components/media-row-scroll";
 
 export type MediaRowItem = {
   id: number | string;
@@ -34,7 +35,7 @@ export function MediaRow({ row }: { row: MediaRowData }) {
   return (
     <section className="space-y-5">
       <h2 className="text-3xl font-bold">{row.title}</h2>
-      <div className="scrollbar-hidden flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <MediaRowScroll>
         {row.items.slice(0, 12).map((film) => (
           <MediaCard
             key={`${row.title}-${film.id}`}
@@ -46,7 +47,7 @@ export function MediaRow({ row }: { row: MediaRowData }) {
             className="w-[38vw] shrink-0 sm:w-[24vw] md:w-[14vw] xl:w-[11vw]"
           />
         ))}
-      </div>
+      </MediaRowScroll>
     </section>
   );
 }

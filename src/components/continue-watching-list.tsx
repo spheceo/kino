@@ -1,14 +1,22 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { IoClose } from "react-icons/io5";
-import { api } from "../../convex/_generated/api";
+import { ContinueWatchingSkeleton } from "@/components/page-skeletons";
+import { useApiQuery } from "@/lib/client-data";
+import { env } from "@/lib/env";
 
-type ContinueWatchingItem = NonNullable<
-  ReturnType<typeof useQuery<typeof api.continueWatching.listForCurrentUser>>
->[number];
+type ContinueWatchingItem = {
+  id: string;
+  mediaType: "movie" | "tv";
+  tmdbId: string;
+  title?: string | null;
+  seasonNumber?: number | null;
+  episodeNumber?: number | null;
+  progressSeconds: number;
+  durationSeconds: number;
+};
 
 type TmdbDetails = {
   backdrop_path?: string | null;
@@ -26,7 +34,6 @@ type TmdbImages = {
 };
 
 function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
-  const hideItem = useMutation(api.continueWatching.hideForCurrentUser);
   const [backdropPath, setBackdropPath] = useState<string | null>(null);
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
@@ -35,9 +42,7 @@ function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
     let cancelled = false;
 
     async function loadBackdrop() {
-      const key = process.env.NEXT_PUBLIC_TMDB_KEY;
-
-      if (!key) return;
+      const key = env.NEXT_PUBLIC_TMDB_KEY;
 
       const [detailsRes, imagesRes] = await Promise.all([
         fetch(
@@ -90,11 +95,15 @@ function ContinueWatchingCard({ item }: { item: ContinueWatchingItem }) {
       : (item.title ?? `Movie ${item.tmdbId}`);
 
   async function removeFromList() {
-    await hideItem({
-      mediaType: item.mediaType,
-      tmdbId: item.tmdbId,
-      seasonNumber: item.seasonNumber,
-      episodeNumber: item.episodeNumber,
+    await fetch("/api/continue-watching", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        mediaType: item.mediaType,
+        tmdbId: item.tmdbId,
+        seasonNumber: item.seasonNumber ?? undefined,
+        episodeNumber: item.episodeNumber ?? undefined,
+      }),
     });
     setIsConfirmingRemove(false);
   }
@@ -185,12 +194,18 @@ export function ContinueWatchingList({
   mediaType?: "movie" | "tv";
   className?: string;
 }) {
-  const items = useQuery(api.continueWatching.listForCurrentUser, {
-    limit: 8,
-    mediaType,
-  });
+  const params = new URLSearchParams({ limit: "8" });
+  if (mediaType) params.set("mediaType", mediaType);
+  const { data: items, isLoading } = useApiQuery<ContinueWatchingItem[]>(
+    `/api/continue-watching?${params.toString()}`,
+    [],
+  );
 
-  if (items === undefined || items.length === 0) {
+  if (isLoading) {
+    return <ContinueWatchingSkeleton />;
+  }
+
+  if (items.length === 0) {
     return null;
   }
 
@@ -199,7 +214,7 @@ export function ContinueWatchingList({
       <h2 className="text-2xl font-semibold">Continue Watching</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item) => (
-          <ContinueWatchingCard key={item._id} item={item} />
+          <ContinueWatchingCard key={item.id} item={item} />
         ))}
       </div>
     </section>

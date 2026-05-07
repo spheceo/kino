@@ -1,40 +1,34 @@
 # Kino
-This is an empty project.
 
-## Auth Setup
+## Database/Auth Setup
 
-Kino uses Better Auth with Google OAuth and Convex for user, account, and session persistence.
+Kino now uses Better Auth with the Drizzle adapter and Neon Postgres.
 
-Required local `.env.local` values:
+Required environment values:
 
 ```env
+DATABASE_URL=postgresql://...
+BETTER_AUTH_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 NEXT_PUBLIC_TMDB_KEY=...
-CONVEX_DEPLOYMENT=dev:...
-NEXT_PUBLIC_CONVEX_URL=https://...convex.cloud
-NEXT_PUBLIC_CONVEX_SITE_URL=https://...convex.site
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-Required Convex environment values:
-
-```bash
-bun x convex env set BETTER_AUTH_SECRET "..."
-bun x convex env set SITE_URL "http://localhost:3000"
-bun x convex env set GOOGLE_CLIENT_ID "..."
-bun x convex env set GOOGLE_CLIENT_SECRET "..."
-```
-
-Google OAuth redirect URI:
+For production, set `NEXT_PUBLIC_SITE_URL` to your deployed domain and add both redirect URIs in Google Cloud OAuth:
 
 ```txt
 http://localhost:3000/api/auth/callback/google
+https://your-domain.com/api/auth/callback/google
 ```
 
-After connecting Convex, regenerate Convex files:
+Database schema sync:
 
 ```bash
-bun x convex dev
+bun run db:push
 ```
+
+We do not use Drizzle migrations in this project. Schema changes are pushed directly with `drizzle-kit push`.
 
 ## TODO
 
@@ -47,19 +41,4 @@ Build recommendations in phases:
 
 1. Start with rule-based personalization from user events: watches, completion rate, preview plays/unmutes, info page opens, Watch Now clicks, genres viewed, searches, skips, and watchlist actions.
 2. Score titles using TMDB metadata: genres, keywords, cast, creators/directors, collections/franchises, production companies, language, release year, popularity, and rating.
-3. Add rows such as `For You`, `Because You Watched`, `Continue Watching`, `More Like This`, `Top Picks in Your Genres`, `New to Kino`, and `Hidden Gems`.
-4. Once enough user activity exists, add collaborative filtering: users who watched X also watched Y, and users with similar taste liked Z.
-5. Use a hybrid ranker combining personal history, content similarity, global popularity, freshness, Kino availability, diversity, and product rules.
-
-Potential event shape:
-
-```json
-{
-  "userId": "123",
-  "contentId": "299534",
-  "mediaType": "movie",
-  "event": "preview_unmuted",
-  "progressSeconds": 18,
-  "timestamp": "..."
-}
-```
+3. Add rows such as `For You`, `Because You Watched`, `More Like This`, `Top Picks in Your Genres`, `New to Kino`, and `Hidden Gems`.

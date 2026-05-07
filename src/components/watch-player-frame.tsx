@@ -3,20 +3,29 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-export function WatchPlayerFrame({ src }: { src: string }) {
+export function WatchPlayerFrame({
+  src,
+  title,
+  mediaType,
+  tmdbId,
+}: {
+  src: string;
+  title: string;
+  mediaType: "movie" | "tv";
+  tmdbId: string;
+}) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [copyUrl, setCopyUrl] = useState("");
   const iframeSrc = useMemo(() => {
-    if (!copyUrl) {
-      return src;
-    }
-
     const url = new URL(src);
-    url.searchParams.set("copyUrl", copyUrl);
+    if (copyUrl) {
+      url.searchParams.set("copyUrl", copyUrl);
+    }
+    url.searchParams.set("title", title);
     return url.toString();
-  }, [copyUrl, src]);
+  }, [copyUrl, src, title]);
 
   useEffect(() => {
     setCopyUrl(window.location.href);
@@ -38,10 +47,28 @@ export function WatchPlayerFrame({ src }: { src: string }) {
       togglePlayback();
     }
 
+    function handleMessage(event: MessageEvent) {
+      if (event.data?.type !== "kino:episode-changed" || mediaType !== "tv") {
+        return;
+      }
+
+      const seasonNumber = Number(event.data.seasonNumber);
+      const episodeNumber = Number(event.data.episodeNumber);
+
+      if (!Number.isFinite(seasonNumber) || !Number.isFinite(episodeNumber)) {
+        return;
+      }
+
+      const nextUrl = `/watch/tv/${encodeURIComponent(tmdbId)}/${encodeURIComponent(String(seasonNumber))}/${encodeURIComponent(String(episodeNumber))}`;
+      window.history.replaceState(window.history.state, "", nextUrl);
+    }
+
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("message", handleMessage);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("message", handleMessage);
     };
   }, []);
 

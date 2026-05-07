@@ -73,10 +73,12 @@ export function HeroPreview({
   const descriptionRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
   const hasStartedPreviewRef = useRef(false);
+  const playableTimerRef = useRef<number | null>(null);
   const [isPlayable, setIsPlayable] = useState(false);
   const [isDelayElapsed, setIsDelayElapsed] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [defaultMuted, setDefaultMuted] = useState(true);
+  const [muted, setMuted] = useState(defaultMuted);
   const [videoAspectRatio, setVideoAspectRatio] = useState(
     DEFAULT_VIDEO_ASPECT_RATIO,
   );
@@ -91,7 +93,7 @@ export function HeroPreview({
       ? `/tv/${encodeURIComponent(contentId)}/${encodeURIComponent(String(season))}/${encodeURIComponent(String(episode))}`
       : `/movie/${encodeURIComponent(contentId)}`;
 
-  const previewUrl = `https://kino-api.up.railway.app${previewPath}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=true`;
+  const previewUrl = `https://kino-api.up.railway.app${previewPath}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=${defaultMuted}`;
 
   const matchesContentId = useCallback(
     (eventData: MessageEvent["data"]) => {
@@ -119,7 +121,7 @@ export function HeroPreview({
     }
 
     stopPreviewPlayer(previewRef.current);
-    setMuted(true);
+    setMuted(defaultMuted);
 
     gsap.to(previewRef.current, {
       opacity: 0,
@@ -151,14 +153,32 @@ export function HeroPreview({
       duration: 0.9,
       ease: "power2.out",
     });
-  }, []);
+  }, [defaultMuted]);
 
   useEffect(() => {
+    setIsPlayable(false);
+    hasStartedPreviewRef.current = false;
+
+    async function loadPreferences() {
+      const res = await fetch("/api/user-preferences");
+      if (res.ok) {
+        const data = (await res.json()) as { previewsMutedByDefault?: boolean };
+        setDefaultMuted(data.previewsMutedByDefault ?? true);
+        setMuted(data.previewsMutedByDefault ?? true);
+      }
+    }
+
+    void loadPreferences();
+
     function handleMessage(event: MessageEvent) {
       if (
         event.data?.type === "kino:playable" &&
         matchesContentId(event.data)
       ) {
+        if (playableTimerRef.current) {
+          window.clearTimeout(playableTimerRef.current);
+          playableTimerRef.current = null;
+        }
         setIsPlayable(true);
       }
 
@@ -196,8 +216,18 @@ export function HeroPreview({
       }
     }
 
+    playableTimerRef.current = window.setTimeout(() => {
+      setIsPlayable(true);
+    }, 4500);
+
     window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    return () => {
+      if (playableTimerRef.current) {
+        window.clearTimeout(playableTimerRef.current);
+        playableTimerRef.current = null;
+      }
+      window.removeEventListener("message", handleMessage);
+    };
   }, [hidePreview, matchesContentId]);
 
   useEffect(() => {
@@ -279,6 +309,12 @@ export function HeroPreview({
       { type: "kino:set-muted", muted: nextMuted },
       "*",
     );
+    setDefaultMuted(nextMuted);
+    void fetch("/api/user-preferences", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ muted: nextMuted }),
+    });
   }
 
   const iframeStyle = {
@@ -302,7 +338,7 @@ export function HeroPreview({
         ref={previewRef}
         src={previewUrl}
         title="Kino preview player"
-        className="absolute left-1/2 top-1/2 border-0 opacity-0 -translate-x-1/2 -translate-y-1/2"
+        className="absolute left-1/2 top-1/2 border-0 opacity-0 -translate-x-1/2 -translate-y-1/2 will-change-transform"
         style={iframeStyle}
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen

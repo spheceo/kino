@@ -1,24 +1,15 @@
-import { convexBetterAuthNextJs } from "@convex-dev/better-auth/nextjs";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 
-function requiredEnv(name: string) {
-  const value = process.env[name];
-
-  if (!value) {
-    throw new Error(`${name} is required`);
-  }
-
-  return value;
+export async function getSession() {
+  return await auth.api.getSession({ headers: await headers() });
 }
 
-export const {
-  handler,
-  preloadAuthQuery,
-  isAuthenticated,
-  getToken,
-  fetchAuthQuery,
-  fetchAuthMutation,
-  fetchAuthAction,
-} = convexBetterAuthNextJs({
-  convexUrl: requiredEnv("NEXT_PUBLIC_CONVEX_URL"),
-  convexSiteUrl: requiredEnv("NEXT_PUBLIC_CONVEX_SITE_URL"),
-});
+export async function isAuthenticated() {
+  return Boolean(await getSession());
+}
+
+export async function getCurrentUserId() {
+  const session = await getSession();
+  return session?.user.id ?? null;
+}

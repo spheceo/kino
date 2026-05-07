@@ -3,8 +3,8 @@ import { RemoveWatchStartParam } from "@/components/remove-watch-start-param";
 import { WatchBackButton } from "@/components/watch-back-button";
 import { WatchPlayerFrame } from "@/components/watch-player-frame";
 import { WatchProgressListener } from "@/components/watch-progress-listener";
-import { api } from "../../../../../../../../convex/_generated/api";
-import { fetchAuthQuery } from "@/lib/auth-server";
+import { getCurrentUserId } from "@/lib/auth-server";
+import { getContinueWatching } from "@/lib/media-store";
 import { env } from "@/lib/env";
 
 type WatchTvPageProps = {
@@ -43,14 +43,17 @@ export default async function WatchTvPage({
     notFound();
   }
 
+  const userId = await getCurrentUserId();
   const [title, progress] = await Promise.all([
     getTvTitle(id),
-    fetchAuthQuery(api.continueWatching.getForCurrentUser, {
-      mediaType: "tv",
-      tmdbId: id,
-      seasonNumber: Number(season),
-      episodeNumber: Number(episode),
-    }),
+    userId
+      ? getContinueWatching(userId, {
+          mediaType: "tv",
+          tmdbId: id,
+          seasonNumber: Number(season),
+          episodeNumber: Number(episode),
+        })
+      : null,
   ]);
   const incomingStartSeconds = start && /^\d+$/.test(start) ? Number(start) : null;
   const startSeconds = Math.floor(incomingStartSeconds ?? progress?.progressSeconds ?? 0);
@@ -62,7 +65,7 @@ export default async function WatchTvPage({
       <WatchBackButton />
       <RemoveWatchStartParam />
       <WatchProgressListener title={title} />
-      <WatchPlayerFrame src={streamUrl} />
+      <WatchPlayerFrame src={streamUrl} title={title} mediaType="tv" tmdbId={id} />
     </main>
   );
 }

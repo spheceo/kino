@@ -21,9 +21,15 @@ async function getLoginBackdrop() {
   }
 
   const data = (await res.json()) as { results?: TmdbBackdropResult[] };
-  const backdrop = data.results?.find((item) => item.backdrop_path);
+  const backdrops = data.results?.filter((item) => item.backdrop_path) ?? [];
 
-  return backdrop?.backdrop_path ?? null;
+  if (backdrops.length === 0) {
+    return null;
+  }
+
+  const randomIndex = Math.floor(Math.random() * backdrops.length);
+
+  return backdrops[randomIndex]?.backdrop_path ?? null;
 }
 
 export default async function LoginPage() {

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Banner from "@/components/banner";
-import Navbar from "@/components/navbar";
+import AppChrome from "@/components/app-chrome";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,10 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="absolute w-full top-0">
-          <Banner />
-          <Navbar />
-        </div>
+        <AppChrome />
         {children}
       </body>
     </html>

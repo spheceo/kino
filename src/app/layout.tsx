@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import AppChrome from "@/components/app-chrome";
+import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { getToken } from "@/lib/auth-server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,18 +19,21 @@ export const metadata: Metadata = {
   description: "Kino is a movie and TV show streaming service.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const token = await getToken();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AppChrome />
-        {children}
+        <ConvexClientProvider initialToken={token}>
+          {children}
+        </ConvexClientProvider>
       </body>
     </html>
   );

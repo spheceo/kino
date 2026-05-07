@@ -18,6 +18,9 @@ type HeroPreviewProps = {
   backdropPath: string;
   runtime?: number;
   children: ReactNode;
+  mediaType: "movie" | "tv";
+  season?: number;
+  episode?: number;
 };
 
 const PREVIEW_DELAY_SECONDS = 1;
@@ -45,11 +48,22 @@ function getPreviewStart(id: string, runtime?: number) {
   return 60 + (hashId(id) % (maxStart - 60));
 }
 
+function stopPreviewPlayer(iframe: HTMLIFrameElement | null) {
+  iframe?.contentWindow?.postMessage({ type: "kino:mute" }, "*");
+  iframe?.contentWindow?.postMessage(
+    { type: "kino:set-muted", muted: true },
+    "*",
+  );
+}
+
 export function HeroPreview({
   id,
   backdropPath,
   runtime,
   children,
+  mediaType,
+  season = 1,
+  episode = 1,
 }: HeroPreviewProps) {
   const contentId = String(id);
   const imageRef = useRef<HTMLDivElement>(null);
@@ -74,9 +88,31 @@ export function HeroPreview({
     [contentId, runtime],
   );
 
-  const previewUrl = `https://kino-api.up.railway.app/movie/${encodeURIComponent(
-    contentId,
-  )}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=true`;
+  const previewPath =
+    mediaType === "tv"
+      ? `/tv/${encodeURIComponent(contentId)}/${encodeURIComponent(String(season))}/${encodeURIComponent(String(episode))}`
+      : `/movie/${encodeURIComponent(contentId)}`;
+
+  const previewUrl = `https://kino-api.up.railway.app${previewPath}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=true`;
+
+  const matchesContentId = useCallback(
+    (eventData: MessageEvent["data"]) => {
+      if (mediaType === "tv") {
+        const showMatch = eventData?.showId ?? eventData?.contentId;
+        const seasonMatch = eventData?.season;
+        const episodeMatch = eventData?.episode;
+
+        return (
+          String(showMatch) === contentId &&
+          String(seasonMatch) === String(season) &&
+          String(episodeMatch) === String(episode)
+        );
+      }
+
+      return String(eventData?.contentId) === contentId;
+    },
+    [contentId, episode, mediaType, season],
+  );
 
   const hidePreview = useCallback(() => {
     if (hideTimerRef.current) {
@@ -84,11 +120,20 @@ export function HeroPreview({
       hideTimerRef.current = null;
     }
 
+    stopPreviewPlayer(previewRef.current);
+    setMuted(true);
+
     gsap.to(previewRef.current, {
       opacity: 0,
       duration: 1,
       ease: "power2.inOut",
-      onComplete: () => setIsPreviewVisible(false),
+      onComplete: () => {
+        setIsPreviewVisible(false);
+
+        if (previewRef.current) {
+          previewRef.current.src = "about:blank";
+        }
+      },
     });
     gsap.to(imageRef.current, {
       opacity: 1,
@@ -114,19 +159,19 @@ export function HeroPreview({
     function handleMessage(event: MessageEvent) {
       if (
         event.data?.type === "kino:playable" &&
-        String(event.data.contentId) === contentId
+        matchesContentId(event.data)
       ) {
         setIsPlayable(true);
       }
 
-      if (event.data?.type === "kino:muted") {
+      if (event.data?.type === "kino:muted" && matchesContentId(event.data)) {
         setMuted(event.data.muted);
       }
 
       if (
         event.data?.type === "kino:duration" &&
         event.data.mode === "preview" &&
-        String(event.data.contentId) === contentId
+        matchesContentId(event.data)
       ) {
         // Duration is currently advisory; the API preview-ended event or local timer controls the fade-out.
       }
@@ -134,7 +179,7 @@ export function HeroPreview({
       if (
         event.data?.type === "kino:dimensions" &&
         event.data.mode === "preview" &&
-        String(event.data.contentId) === contentId
+        matchesContentId(event.data)
       ) {
         const width = Number(event.data.width);
         const height = Number(event.data.height);
@@ -147,7 +192,7 @@ export function HeroPreview({
       if (
         event.data?.type === "kino:preview-ended" &&
         event.data.mode === "preview" &&
-        String(event.data.contentId) === contentId
+        matchesContentId(event.data)
       ) {
         hidePreview();
       }
@@ -155,7 +200,7 @@ export function HeroPreview({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [contentId, hidePreview]);
+  }, [hidePreview, matchesContentId]);
 
   useEffect(() => {
     const previewTimer = window.setTimeout(
@@ -224,6 +269,7 @@ export function HeroPreview({
         window.clearTimeout(hideTimerRef.current);
         hideTimerRef.current = null;
       }
+      stopPreviewPlayer(previewRef.current);
       gsap.killTweensOf([imageRef.current, previewRef.current]);
       gsap.killTweensOf([
         contentHeaderRef.current,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import Navlinks from "@/components/navlinks";
 import Search from "@/components/search";
+import { UserAvatarLink } from "@/components/user-avatar-link";
 
 const nav = [
   { name: "Home", link: "/" },
@@ -24,9 +25,12 @@ export default function Navbar() {
         />
       </Link>
       <Navlinks nav={nav} />
-      <Suspense>
-        <Search />
-      </Suspense>
+      <div className="ml-auto flex items-center gap-3">
+        <Suspense>
+          <Search />
+        </Suspense>
+        <UserAvatarLink />
+      </div>
     </nav>
   );
 }

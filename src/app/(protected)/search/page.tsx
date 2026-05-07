@@ -19,6 +19,10 @@ type TmdbSearchResult = {
   poster_path?: string | null;
 };
 
+type SearchMediaResult = TmdbSearchResult & {
+  media_type: "movie" | "tv";
+};
+
 async function searchTmdb(query: string) {
   if (!query.trim()) {
     return [];
@@ -43,7 +47,8 @@ async function searchTmdb(query: string) {
   const data = (await res.json()) as { results?: TmdbSearchResult[] };
 
   return (data.results ?? []).filter(
-    (result) => result.media_type === "movie" || result.media_type === "tv",
+    (result): result is SearchMediaResult =>
+      result.media_type === "movie" || result.media_type === "tv",
   );
 }
 
@@ -109,6 +114,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               <MediaCard
                 key={`${result.media_type}-${result.id}`}
                 id={result.id}
+                mediaType={result.media_type}
                 title={title}
                 year={year}
                 posterPath={result.poster_path}

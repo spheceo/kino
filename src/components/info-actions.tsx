@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { IoAdd, IoPlay, IoVolumeHigh, IoVolumeMute } from "react-icons/io5";
 
@@ -8,16 +9,25 @@ const PREVIEW_MUTED_EVENT = "kino:info-preview-muted";
 
 type PreviewStateDetail = {
   contentId?: string;
+  mediaType?: "movie" | "tv";
+  season?: number;
+  episode?: number;
   isPreviewing?: boolean;
 };
 
 type PreviewMutedDetail = {
   contentId?: string;
+  mediaType?: "movie" | "tv";
+  season?: number;
+  episode?: number;
   muted?: boolean;
 };
 
 type InfoActionsProps = {
   contentId: string | number;
+  mediaType: "movie" | "tv";
+  season?: number;
+  episode?: number;
 };
 
 function postPreviewCommand(command: { type: string; muted?: boolean }) {
@@ -28,7 +38,34 @@ function postPreviewCommand(command: { type: string; muted?: boolean }) {
   iframe?.contentWindow?.postMessage(command, "*");
 }
 
-export function InfoActions({ contentId }: InfoActionsProps) {
+function matchesPreviewIdentity(
+  detail: PreviewStateDetail | PreviewMutedDetail | undefined,
+  contentId: string,
+  mediaType: "movie" | "tv",
+  season?: number,
+  episode?: number,
+) {
+  if (String(detail?.contentId) !== contentId) {
+    return false;
+  }
+
+  if (mediaType === "movie") {
+    return detail?.mediaType !== "tv";
+  }
+
+  return (
+    detail?.mediaType === "tv" &&
+    String(detail?.season) === String(season ?? 1) &&
+    String(detail?.episode) === String(episode ?? 1)
+  );
+}
+
+export function InfoActions({
+  contentId,
+  mediaType,
+  season,
+  episode,
+}: InfoActionsProps) {
   const contentIdString = String(contentId);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -37,7 +74,15 @@ export function InfoActions({ contentId }: InfoActionsProps) {
     function handlePreviewState(event: Event) {
       const detail = (event as CustomEvent<PreviewStateDetail>).detail;
 
-      if (String(detail?.contentId) !== contentIdString) {
+      if (
+        !matchesPreviewIdentity(
+          detail,
+          contentIdString,
+          mediaType,
+          season,
+          episode,
+        )
+      ) {
         return;
       }
 
@@ -47,7 +92,15 @@ export function InfoActions({ contentId }: InfoActionsProps) {
     function handleMutedState(event: Event) {
       const detail = (event as CustomEvent<PreviewMutedDetail>).detail;
 
-      if (String(detail?.contentId) !== contentIdString) {
+      if (
+        !matchesPreviewIdentity(
+          detail,
+          contentIdString,
+          mediaType,
+          season,
+          episode,
+        )
+      ) {
         return;
       }
 
@@ -61,7 +114,7 @@ export function InfoActions({ contentId }: InfoActionsProps) {
       window.removeEventListener(PREVIEW_STATE_EVENT, handlePreviewState);
       window.removeEventListener(PREVIEW_MUTED_EVENT, handleMutedState);
     };
-  }, [contentIdString]);
+  }, [contentIdString, episode, mediaType, season]);
 
   function toggleMuted() {
     const nextMuted = !isMuted;
@@ -69,12 +122,20 @@ export function InfoActions({ contentId }: InfoActionsProps) {
     postPreviewCommand({ type: "kino:set-muted", muted: nextMuted });
   }
 
+  const watchHref =
+    mediaType === "tv"
+      ? `/watch/tv/${encodeURIComponent(contentIdString)}/${encodeURIComponent(String(season ?? 1))}/${encodeURIComponent(String(episode ?? 1))}`
+      : `/watch/${encodeURIComponent(contentIdString)}`;
+
   return (
     <div className="mt-10 flex items-center gap-4">
-      <div className="flex h-14 w-60 items-center justify-center gap-3 rounded-full bg-white font-semibold text-black">
+      <Link
+        href={watchHref}
+        className="flex h-14 w-60 items-center justify-center gap-3 rounded-full bg-white font-semibold text-black"
+      >
         <IoPlay size={22} />
         Watch Now
-      </div>
+      </Link>
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2c2c2c] text-white">
         <IoAdd size={34} />
       </div>

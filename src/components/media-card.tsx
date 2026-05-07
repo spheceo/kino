@@ -8,6 +8,7 @@ type MediaCardProps = {
   year?: string;
   posterPath?: string | null;
   className?: string;
+  mediaType?: "movie" | "tv";
 };
 
 export default function MediaCard({
@@ -16,10 +17,13 @@ export default function MediaCard({
   year,
   posterPath,
   className = "",
+  mediaType,
 }: MediaCardProps) {
+  const href = mediaType ? `/info/${id}?mediaType=${mediaType}` : `/info/${id}`;
+
   return (
     <Link
-      href={`/info/${id}`}
+      href={href}
       className={`group relative block aspect-[2/3] overflow-hidden rounded-xl border border-[#090909] bg-[#232323] ${className}`}
     >
       {posterPath ? (

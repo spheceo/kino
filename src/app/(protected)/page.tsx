@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import { HeroPreview } from "@/components/hero-preview";
-import MediaCard from "@/components/media-card";
+import { MediaRow } from "@/components/media-row";
 import { WatchNow } from "@/components/watch-now";
-import { env } from "@/lib/env";
 import { getRecommended } from "@/lib/get-recommended";
+import { fetchTmdbRow } from "@/lib/tmdb-rows";
 
 export const dynamic = "force-dynamic";
 
@@ -26,12 +26,39 @@ export default async function Home() {
   const currentYear = new Date().getFullYear();
 
   const data = await getRecommended(index);
+  const heroDetails =
+    data.nextEpisode !== "false" && data.nextEpisode !== "undefined"
+      ? [`New Episode ${data.nextEpisode}`]
+      : [data.year, data.duration].filter(Boolean);
 
-  const res = await fetch(
-    `https://api.themoviedb.org/3/trending/all/week?api_key=${env.NEXT_PUBLIC_TMDB_KEY}&language=en-US`,
-  );
-  const data2 = await res.json();
-  const films = data2.results;
+  const rows = await Promise.all([
+    fetchTmdbRow("Trending", "/trending/all/week", "movie"),
+    fetchTmdbRow(
+      "Action",
+      "/discover/movie?with_genres=28&sort_by=popularity.desc",
+      "movie",
+    ),
+    fetchTmdbRow(
+      "Comedy",
+      "/discover/movie?with_genres=35&sort_by=popularity.desc",
+      "movie",
+    ),
+    fetchTmdbRow(
+      "Animation",
+      "/discover/movie?with_genres=16&sort_by=popularity.desc",
+      "movie",
+    ),
+    fetchTmdbRow(
+      "Binge-Worthy TV",
+      "/discover/tv?sort_by=popularity.desc",
+      "tv",
+    ),
+    fetchTmdbRow(
+      "New This Year",
+      `/discover/movie?primary_release_year=${currentYear}&sort_by=popularity.desc`,
+      "movie",
+    ),
+  ]);
   // console.log("FILMS: ", films);
 
   // console.log(data.nextEpisode, typeof data.nextEpisode);
@@ -45,6 +72,9 @@ export default async function Home() {
             id={data.id}
             backdropPath={data.backdrop_path}
             runtime={data.runtime}
+            mediaType={data.mediaType}
+            season={data.season}
+            episode={data.episode}
           >
             {data.title.includes(":") ? (
               (() => {
@@ -61,26 +91,24 @@ export default async function Home() {
             )}
             <div className="flex gap-2 items-center">
               <h1 className="text-xl font-semibold">{data.ranking}</h1>
-              <p>•</p>
-              {data.nextEpisode !== "false" &&
-              data.nextEpisode !== "undefined" ? (
-                <h1 className="text-xl font-semibold">
-                  New Episode {data.nextEpisode}
-                </h1>
-              ) : (
-                <>
-                  <p>{data.year}</p>
+              {heroDetails.map((detail) => (
+                <div key={detail} className="flex items-center gap-2">
                   <p>•</p>
-                  <p>{data.duration}</p>
-                </>
-              )}
+                  <p>{detail}</p>
+                </div>
+              ))}
             </div>
             <p>{data.description}</p>
             <div className="flex items-center gap-4">
-              <WatchNow id={data.id} />
+              <WatchNow
+                id={data.id}
+                mediaType={data.mediaType}
+                season={data.season}
+                episode={data.episode}
+              />
 
               <Link
-                href={`/info/${data.id}`}
+                href={`/info/${data.id}?mediaType=${data.mediaType}`}
                 className="bg-[#2c2c2c] w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
               >
                 <IoMdInformationCircleOutline size={25} />
@@ -91,30 +119,10 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Trending Section */}
-      <div className="px-10 space-y-5 relative">
-        <h1 className="text-3xl font-bold">Trending</h1>
-        <div className="flex gap-3 relative flex-wrap md:flex-nowrap">
-          {Array.isArray(films) &&
-            films
-              .slice(0, 9)
-              .map((film) => (
-                <MediaCard
-                  key={film.id}
-                  id={film.id}
-                  title={film.title ? film.title : film.name}
-                  year={
-                    film?.first_air_date
-                      ? film.first_air_date.slice(0, 4)
-                      : film?.release_date
-                        ? film.release_date.slice(0, 4)
-                        : "N/A"
-                  }
-                  posterPath={film?.poster_path}
-                  className="w-[25vw] md:w-[11vw]"
-                />
-              ))}
-        </div>
+      <div className="relative space-y-10 px-10">
+        {rows.map((row) => (
+          <MediaRow key={row.title} row={row} />
+        ))}
       </div>
 
       <footer className="px-10 py-10 text-sm text-white/45">

@@ -23,3 +23,15 @@ body {
   backdrop-filter: blur(10px);
   background-color: #ffffff9f;
 }
+
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}

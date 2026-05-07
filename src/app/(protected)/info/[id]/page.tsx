@@ -8,6 +8,9 @@ type InfoPageProps = {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{
+    mediaType?: "movie" | "tv";
+  }>;
 };
 
 type TmdbGenre = {
@@ -26,6 +29,7 @@ type TmdbDetails = {
   vote_average?: number;
   number_of_seasons?: number;
   runtime?: number;
+  episode_run_time?: number[];
   overview?: string;
   genres?: TmdbGenre[];
 };
@@ -52,7 +56,23 @@ async function getDetails(id: string, mediaType: "movie" | "tv") {
   } satisfies MediaDetails;
 }
 
-async function getMediaDetails(id: string) {
+function isTvMediaType(mediaType?: string): mediaType is "movie" | "tv" {
+  return mediaType === "movie" || mediaType === "tv";
+}
+
+async function getMediaDetails(id: string, preferredMediaType?: string) {
+  const preferred = isTvMediaType(preferredMediaType)
+    ? preferredMediaType
+    : undefined;
+
+  if (preferred) {
+    const preferredDetails = await getDetails(id, preferred);
+
+    if (preferredDetails) {
+      return preferredDetails;
+    }
+  }
+
   const movie = await getDetails(id, "movie");
 
   if (movie) {
@@ -62,14 +82,18 @@ async function getMediaDetails(id: string) {
   return getDetails(id, "tv");
 }
 
-export default async function InfoPage({ params }: InfoPageProps) {
+export default async function InfoPage({
+  params,
+  searchParams,
+}: InfoPageProps) {
   const { id } = await params;
+  const { mediaType: preferredMediaType } = await searchParams;
 
   if (!/^\d+$/.test(id)) {
     notFound();
   }
 
-  const film = await getMediaDetails(id);
+  const film = await getMediaDetails(id, preferredMediaType);
 
   if (!film) {
     notFound();
@@ -79,13 +103,20 @@ export default async function InfoPage({ params }: InfoPageProps) {
   const year =
     film.first_air_date?.slice(0, 4) ?? film.release_date?.slice(0, 4) ?? "";
   const rating = film.vote_average ? film.vote_average.toFixed(1) : "";
+  const previewRuntime =
+    film.mediaType === "tv" ? film.episode_run_time?.[0] : film.runtime;
+  const defaultSeason = film.mediaType === "tv" ? 1 : undefined;
+  const defaultEpisode = film.mediaType === "tv" ? 1 : undefined;
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-background text-white">
       <InfoBackgroundStage
         id={film.id}
         backdropPath={film.backdrop_path}
-        runtime={film.runtime}
+        runtime={previewRuntime}
+        mediaType={film.mediaType}
+        season={defaultSeason}
+        episode={defaultEpisode}
       />
 
       <section className="relative z-10 flex min-h-dvh max-w-[760px] flex-col justify-center px-10 py-24 md:px-20">
@@ -138,7 +169,12 @@ export default async function InfoPage({ params }: InfoPageProps) {
           </div>
         ) : null}
 
-        <InfoActions contentId={film.id} />
+        <InfoActions
+          contentId={film.id}
+          mediaType={film.mediaType}
+          season={defaultSeason}
+          episode={defaultEpisode}
+        />
       </section>
     </main>
   );

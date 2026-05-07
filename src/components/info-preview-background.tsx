@@ -9,6 +9,9 @@ type InfoPreviewBackgroundProps = {
   backdropPath: string;
   runtime?: number;
   onPreviewChange?: (isPreviewing: boolean) => void;
+  mediaType: "movie" | "tv";
+  season?: number;
+  episode?: number;
 };
 
 const PREVIEW_DELAY_SECONDS = 1;
@@ -38,11 +41,22 @@ function getPreviewStart(id: string, runtime?: number) {
   return 60 + (hashId(id) % (maxStart - 60));
 }
 
+function stopPreviewPlayer(iframe: HTMLIFrameElement | null) {
+  iframe?.contentWindow?.postMessage({ type: "kino:mute" }, "*");
+  iframe?.contentWindow?.postMessage(
+    { type: "kino:set-muted", muted: true },
+    "*",
+  );
+}
+
 export function InfoPreviewBackground({
   id,
   backdropPath,
   runtime,
   onPreviewChange,
+  mediaType,
+  season = 1,
+  episode = 1,
 }: InfoPreviewBackgroundProps) {
   const contentId = String(id);
   const imageRef = useRef<HTMLDivElement>(null);
@@ -62,20 +76,48 @@ export function InfoPreviewBackground({
     [contentId, runtime],
   );
 
-  const previewUrl = `https://kino-api.up.railway.app/movie/${encodeURIComponent(
-    contentId,
-  )}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=true`;
+  const previewPath =
+    mediaType === "tv"
+      ? `/tv/${encodeURIComponent(contentId)}/${encodeURIComponent(String(season))}/${encodeURIComponent(String(episode))}`
+      : `/movie/${encodeURIComponent(contentId)}`;
+
+  const previewUrl = `https://kino-api.up.railway.app${previewPath}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=true`;
+
+  const matchesContentId = useCallback(
+    (eventData: MessageEvent["data"]) => {
+      if (mediaType === "tv") {
+        const showMatch = eventData?.showId ?? eventData?.contentId;
+        const seasonMatch = eventData?.season;
+        const episodeMatch = eventData?.episode;
+
+        return (
+          String(showMatch) === contentId &&
+          String(seasonMatch) === String(season) &&
+          String(episodeMatch) === String(episode)
+        );
+      }
+
+      return String(eventData?.contentId) === contentId;
+    },
+    [contentId, episode, mediaType, season],
+  );
 
   const setPreviewing = useCallback(
     (nextPreviewing: boolean) => {
       onPreviewChange?.(nextPreviewing);
       window.dispatchEvent(
         new CustomEvent(PREVIEW_STATE_EVENT, {
-          detail: { contentId, isPreviewing: nextPreviewing },
+          detail: {
+            contentId,
+            mediaType,
+            season,
+            episode,
+            isPreviewing: nextPreviewing,
+          },
         }),
       );
     },
-    [contentId, onPreviewChange],
+    [contentId, episode, mediaType, onPreviewChange, season],
   );
 
   const hidePreview = useCallback(() => {
@@ -84,10 +126,17 @@ export function InfoPreviewBackground({
       hideTimerRef.current = null;
     }
 
+    stopPreviewPlayer(previewRef.current);
+
     gsap.to(previewRef.current, {
       opacity: 0,
       duration: 1,
       ease: "power2.inOut",
+      onComplete: () => {
+        if (previewRef.current) {
+          previewRef.current.src = "about:blank";
+        }
+      },
     });
     gsap.to(imageRef.current, {
       opacity: 1,
@@ -101,7 +150,7 @@ export function InfoPreviewBackground({
     function handleMessage(event: MessageEvent) {
       if (
         event.data?.type === "kino:playable" &&
-        String(event.data.contentId) === contentId
+        matchesContentId(event.data)
       ) {
         setIsPlayable(true);
       }
@@ -109,7 +158,7 @@ export function InfoPreviewBackground({
       if (
         event.data?.type === "kino:dimensions" &&
         event.data.mode === "preview" &&
-        String(event.data.contentId) === contentId
+        matchesContentId(event.data)
       ) {
         const width = Number(event.data.width);
         const height = Number(event.data.height);
@@ -122,18 +171,21 @@ export function InfoPreviewBackground({
       if (
         event.data?.type === "kino:preview-ended" &&
         event.data.mode === "preview" &&
-        String(event.data.contentId) === contentId
+        matchesContentId(event.data)
       ) {
         hidePreview();
       }
 
-      if (
-        event.data?.type === "kino:muted" &&
-        String(event.data.contentId) === contentId
-      ) {
+      if (event.data?.type === "kino:muted" && matchesContentId(event.data)) {
         window.dispatchEvent(
           new CustomEvent(PREVIEW_MUTED_EVENT, {
-            detail: { contentId, muted: Boolean(event.data.muted) },
+            detail: {
+              contentId,
+              mediaType,
+              season,
+              episode,
+              muted: Boolean(event.data.muted),
+            },
           }),
         );
       }
@@ -141,7 +193,7 @@ export function InfoPreviewBackground({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [contentId, hidePreview]);
+  }, [contentId, episode, hidePreview, matchesContentId, mediaType, season]);
 
   useEffect(() => {
     if (!isImageLoaded) {
@@ -208,6 +260,7 @@ export function InfoPreviewBackground({
         window.clearTimeout(hideTimerRef.current);
         hideTimerRef.current = null;
       }
+      stopPreviewPlayer(previewRef.current);
       gsap.killTweensOf([imageRef.current, previewRef.current]);
     };
   }, []);

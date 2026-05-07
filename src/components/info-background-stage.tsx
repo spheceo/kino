@@ -8,12 +8,18 @@ type InfoBackgroundStageProps = {
   id: string | number;
   backdropPath?: string | null;
   runtime?: number;
+  mediaType: "movie" | "tv";
+  season?: number;
+  episode?: number;
 };
 
 export function InfoBackgroundStage({
   id,
   backdropPath,
   runtime,
+  mediaType,
+  season,
+  episode,
 }: InfoBackgroundStageProps) {
   const horizontalGradientRef = useRef<HTMLDivElement>(null);
   const verticalGradientRef = useRef<HTMLDivElement>(null);
@@ -45,6 +51,9 @@ export function InfoBackgroundStage({
           id={id}
           backdropPath={backdropPath}
           runtime={runtime}
+          mediaType={mediaType}
+          season={season}
+          episode={episode}
           onPreviewChange={setIsPreviewing}
         />
       ) : (
@@ -60,7 +69,7 @@ export function InfoBackgroundStage({
       />
       <div
         ref={leftBlurRef}
-        className="pointer-events-none absolute inset-y-0 left-0 z-0 w-[72%] bg-gradient-to-r from-black/20 via-black/10 to-transparent opacity-0 backdrop-blur-sm [mask-image:linear-gradient(to_right,black_0%,black_62%,transparent_100%)]"
+        className="pointer-events-none absolute inset-y-0 left-0 z-0 w-[64%] bg-gradient-to-r from-black/16 via-black/6 to-transparent opacity-0 backdrop-blur-[2px] [mask-image:linear-gradient(to_right,black_0%,black_56%,transparent_100%)]"
       />
     </>
   );

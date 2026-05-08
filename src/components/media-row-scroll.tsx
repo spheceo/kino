@@ -42,7 +42,7 @@ export function MediaRowScroll({ children }: { children: React.ReactNode }) {
         type="button"
         aria-label="Scroll left"
         onClick={() => scrollBy("left")}
-        className={`absolute -left-4 top-0 z-10 hidden h-full w-28 items-center justify-start pl-1 transition-opacity duration-200 md:flex ${canScrollLeft ? "opacity-0 group-hover/row:opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`absolute -left-4 top-0 z-10 hidden h-full w-28 cursor-pointer items-center justify-start pl-1 transition-opacity duration-200 md:flex ${canScrollLeft ? "opacity-0 group-hover/row:opacity-100" : "pointer-events-none opacity-0"}`}
         style={{ background: "linear-gradient(to right, var(--color-background) 30%, transparent)" }}
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.08] text-white backdrop-blur-sm transition-colors hover:bg-white/[0.14]">
@@ -63,7 +63,7 @@ export function MediaRowScroll({ children }: { children: React.ReactNode }) {
         type="button"
         aria-label="Scroll right"
         onClick={() => scrollBy("right")}
-        className={`absolute -right-4 top-0 z-10 hidden h-full w-28 items-center justify-end pr-1 transition-opacity duration-200 md:flex ${canScrollRight ? "opacity-0 group-hover/row:opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`absolute -right-4 top-0 z-10 hidden h-full w-28 cursor-pointer items-center justify-end pr-1 transition-opacity duration-200 md:flex ${canScrollRight ? "opacity-0 group-hover/row:opacity-100" : "pointer-events-none opacity-0"}`}
         style={{ background: "linear-gradient(to left, var(--color-background) 30%, transparent)" }}
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.08] text-white backdrop-blur-sm transition-colors hover:bg-white/[0.14]">

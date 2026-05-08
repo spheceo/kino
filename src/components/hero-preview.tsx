@@ -12,6 +12,11 @@ import {
   useState,
 } from "react";
 import { IoVolumeHigh, IoVolumeMute } from "react-icons/io5";
+import {
+  getMoviePreviewUrl,
+  getTvPreviewUrl,
+  videoProviderConfig,
+} from "@/lib/video-provider";
 
 type HeroPreviewProps = {
   id: string | number;
@@ -70,6 +75,7 @@ export function HeroPreview({
   const previewRef = useRef<HTMLIFrameElement>(null);
   const heroContentRef = useRef<HTMLDivElement>(null);
   const contentHeaderRef = useRef<HTMLDivElement>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
   const hasStartedPreviewRef = useRef(false);
@@ -88,12 +94,22 @@ export function HeroPreview({
     [contentId, runtime],
   );
 
-  const previewPath =
+  const previewUrl =
     mediaType === "tv"
-      ? `/tv/${encodeURIComponent(contentId)}/${encodeURIComponent(String(season))}/${encodeURIComponent(String(episode))}`
-      : `/movie/${encodeURIComponent(contentId)}`;
-
-  const previewUrl = `https://kino-api.up.railway.app${previewPath}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=${defaultMuted}`;
+      ? getTvPreviewUrl({
+          id: contentId,
+          season,
+          episode,
+          startSeconds: previewStart,
+          durationSeconds: PREVIEW_DURATION_SECONDS,
+          muted: defaultMuted,
+        })
+      : getMoviePreviewUrl({
+          id: contentId,
+          startSeconds: previewStart,
+          durationSeconds: PREVIEW_DURATION_SECONDS,
+          muted: defaultMuted,
+        });
 
   const matchesContentId = useCallback(
     (eventData: MessageEvent["data"]) => {
@@ -140,14 +156,18 @@ export function HeroPreview({
       duration: 1,
       ease: "power2.inOut",
     });
-    gsap.to(descriptionRef.current, {
-      autoAlpha: 1,
-      height: "auto",
-      y: 0,
-      marginTop: "",
-      duration: 0.9,
-      ease: "power2.out",
-    });
+    const showTargets = [detailsRef.current, descriptionRef.current].filter(Boolean);
+
+    if (showTargets.length > 0) {
+      gsap.to(showTargets, {
+        autoAlpha: 1,
+        height: "auto",
+        y: 0,
+        marginTop: "",
+        duration: 0.9,
+        ease: "power2.out",
+      });
+    }
     gsap.to(contentHeaderRef.current, {
       y: 0,
       duration: 0.9,
@@ -231,6 +251,10 @@ export function HeroPreview({
   }, [hidePreview, matchesContentId]);
 
   useEffect(() => {
+    if (!videoProviderConfig.supportsPreview) {
+      return;
+    }
+
     const previewTimer = window.setTimeout(
       () => setIsDelayElapsed(true),
       PREVIEW_DELAY_SECONDS * 1000,
@@ -243,6 +267,7 @@ export function HeroPreview({
   useEffect(() => {
     if (
       !(
+        videoProviderConfig.supportsPreview &&
         isDelayElapsed &&
         isPlayable &&
         !hasStartedPreviewRef.current
@@ -264,14 +289,18 @@ export function HeroPreview({
       ease: "power2.out",
     });
     window.setTimeout(() => {
-      gsap.to(descriptionRef.current, {
-        autoAlpha: 0,
-        height: 0,
-        marginTop: 0,
-        y: 8,
-        duration: 1,
-        ease: "power3.inOut",
-      });
+      const hideTargets = [detailsRef.current, descriptionRef.current].filter(Boolean);
+
+      if (hideTargets.length > 0) {
+        gsap.to(hideTargets, {
+          autoAlpha: 0,
+          height: 0,
+          marginTop: 0,
+          y: 8,
+          duration: 1,
+          ease: "power3.inOut",
+        });
+      }
       gsap.to(contentHeaderRef.current, {
         y: 0,
         duration: 1,
@@ -295,6 +324,7 @@ export function HeroPreview({
       gsap.killTweensOf([imageRef.current, previewRef.current]);
       gsap.killTweensOf([
         contentHeaderRef.current,
+        detailsRef.current,
         descriptionRef.current,
         heroContentRef.current,
       ]);
@@ -318,8 +348,9 @@ export function HeroPreview({
   }
 
   const iframeStyle = {
-    height: `max(100%, calc(100vw / ${videoAspectRatio}))`,
-    width: `max(100%, calc(100dvh * ${videoAspectRatio}))`,
+    height: "100%",
+    width: "100%",
+    transform: mediaType === "movie" ? "scale(1.38)" : undefined,
   };
 
   return (
@@ -334,6 +365,7 @@ export function HeroPreview({
           priority
         />
       </div>
+      {videoProviderConfig.supportsPreview ? (
       <iframe
         ref={previewRef}
         src={previewUrl}
@@ -343,13 +375,17 @@ export function HeroPreview({
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
       />
+      ) : null}
       <div
         ref={heroContentRef}
-        className="relative z-10 flex h-full w-full flex-col justify-end p-10"
+        className="relative z-10 flex h-full w-full flex-col justify-end px-10 pb-6 pt-10"
       >
         <div className="relative w-[600px] space-y-5">
           <div ref={contentHeaderRef} className="space-y-5">
-            {contentParts.slice(0, 2)}
+            {contentParts[0]}
+          </div>
+          <div ref={detailsRef} className="overflow-hidden">
+            {contentParts[1]}
           </div>
           <div ref={descriptionRef} className="overflow-hidden">
             {contentParts[2]}

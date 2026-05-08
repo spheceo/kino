@@ -20,7 +20,7 @@ export function SignOutButton() {
       type="button"
       onClick={signOut}
       disabled={isLoading}
-      className="h-10 rounded-full border border-white/15 bg-white/[0.06] px-6 text-sm font-semibold text-white transition-colors hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+      className="h-10 cursor-pointer rounded-full border border-white/15 bg-white/[0.06] px-6 text-sm font-semibold text-white transition-colors hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? "Signing out..." : "Sign out"}
     </button>

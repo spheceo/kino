@@ -157,7 +157,7 @@ export function InfoActions({
           type="button"
           aria-label={isMuted ? "Unmute preview" : "Mute preview"}
           onClick={toggleMuted}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2c2c2c] text-white transition-colors hover:bg-[#3a3a3a]"
+          className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-[#2c2c2c] text-white transition-colors hover:bg-[#3a3a3a]"
         >
           {isMuted ? <IoVolumeMute size={25} /> : <IoVolumeHigh size={25} />}
         </button>

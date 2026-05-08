@@ -108,10 +108,6 @@ const rowConfigs = [
   { title: "Popular Movies", endpoint: "/movie/popular" },
   { title: "Now Playing", endpoint: "/movie/now_playing" },
   { title: "Top Rated", endpoint: "/movie/top_rated" },
-  { title: "Upcoming", endpoint: "/movie/upcoming" },
-  { title: "Action", endpoint: "/discover/movie?with_genres=28&sort_by=popularity.desc" },
-  { title: "Comedy", endpoint: "/discover/movie?with_genres=35&sort_by=popularity.desc" },
-  { title: "New This Year", endpoint: `/discover/movie?primary_release_year=${currentYear}&sort_by=popularity.desc` },
 ];
 
 export default function MoviesPage() {
@@ -130,8 +126,9 @@ export default function MoviesPage() {
         ))}
       </div>
 
-      <footer className="px-10 py-10 text-sm text-white/45">
-        &copy; {currentYear} Kino, All Rights Reserved
+      <footer className="flex items-center gap-6 px-10 py-10 text-sm text-white/35">
+        <span>&copy; {currentYear} Kino</span>
+        <Link href="/legal" className="cursor-pointer transition-colors hover:text-white/60">Legal</Link>
       </footer>
     </div>
   );

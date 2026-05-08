@@ -3,6 +3,11 @@
 import gsap from "gsap";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  getMoviePreviewUrl,
+  getTvPreviewUrl,
+  videoProviderConfig,
+} from "@/lib/video-provider";
 
 type InfoPreviewBackgroundProps = {
   id: string | number;
@@ -76,12 +81,22 @@ export function InfoPreviewBackground({
     [contentId, runtime],
   );
 
-  const previewPath =
+  const previewUrl =
     mediaType === "tv"
-      ? `/tv/${encodeURIComponent(contentId)}/${encodeURIComponent(String(season))}/${encodeURIComponent(String(episode))}`
-      : `/movie/${encodeURIComponent(contentId)}`;
-
-  const previewUrl = `https://kino-api.up.railway.app${previewPath}?mode=preview&start=${previewStart}&duration=${PREVIEW_DURATION_SECONDS}&autoPlay=true&mute=${defaultMuted}`;
+      ? getTvPreviewUrl({
+          id: contentId,
+          season,
+          episode,
+          startSeconds: previewStart,
+          durationSeconds: PREVIEW_DURATION_SECONDS,
+          muted: defaultMuted,
+        })
+      : getMoviePreviewUrl({
+          id: contentId,
+          startSeconds: previewStart,
+          durationSeconds: PREVIEW_DURATION_SECONDS,
+          muted: defaultMuted,
+        });
 
   const matchesContentId = useCallback(
     (eventData: MessageEvent["data"]) => {
@@ -223,7 +238,7 @@ export function InfoPreviewBackground({
   }, [contentId, episode, hidePreview, matchesContentId, mediaType, season]);
 
   useEffect(() => {
-    if (!isImageLoaded) {
+    if (!videoProviderConfig.supportsPreview || !isImageLoaded) {
       return;
     }
 
@@ -239,6 +254,7 @@ export function InfoPreviewBackground({
   useEffect(() => {
     if (
       !(
+        videoProviderConfig.supportsPreview &&
         isImageLoaded &&
         isDelayElapsed &&
         isPlayable &&
@@ -285,8 +301,9 @@ export function InfoPreviewBackground({
   }, []);
 
   const iframeStyle = {
-    height: `max(100%, calc(100vw / ${videoAspectRatio}))`,
-    width: `max(100%, calc(100dvh * ${videoAspectRatio}))`,
+    height: "100%",
+    width: "100%",
+    transform: mediaType === "movie" ? "scale(1.38)" : undefined,
   };
 
   return (
@@ -302,6 +319,7 @@ export function InfoPreviewBackground({
           onLoad={() => setIsImageLoaded(true)}
         />
       </div>
+      {videoProviderConfig.supportsPreview ? (
       <iframe
         ref={previewRef}
         src={previewUrl}
@@ -311,6 +329,7 @@ export function InfoPreviewBackground({
         allow="autoplay; fullscreen; picture-in-picture"
         allowFullScreen
       />
+      ) : null}
     </>
   );
 }

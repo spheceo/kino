@@ -16,7 +16,7 @@ export function UserAvatarLink() {
     <Link
       href="/profile"
       aria-label="Open profile"
-      className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#2c2c2c] text-sm font-semibold text-white ring-1 ring-white/10 transition-opacity hover:opacity-85"
+      className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[#2c2c2c] text-sm font-semibold text-white ring-1 ring-white/10 transition-opacity hover:opacity-85"
     >
       {user?.image ? (
         <Image

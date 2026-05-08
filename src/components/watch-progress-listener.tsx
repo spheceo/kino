@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { vidfastOrigins } from "@/lib/video-provider";
 
 type WatchProgressEvent = {
   type:
@@ -24,14 +25,44 @@ function optionalFiniteNumber(value: unknown) {
     : undefined;
 }
 
-function isWatchProgressEvent(value: unknown): value is WatchProgressEvent {
+function normalizePlayerEvent(message: MessageEvent): WatchProgressEvent | null {
+  const value = message.data;
+
+  if (value?.type === "PLAYER_EVENT" && vidfastOrigins.includes(message.origin)) {
+    const data = value.data;
+    const eventMap: Record<string, WatchProgressEvent["type"]> = {
+      play: "kino:progress",
+      timeupdate: "kino:progress",
+      pause: "kino:pause",
+      seeked: "kino:progress",
+      ended: "kino:ended",
+      playerstatus: "kino:progress",
+    };
+    const type = eventMap[data?.event];
+
+    if (!type || (data?.mediaType !== "movie" && data?.mediaType !== "tv")) {
+      return null;
+    }
+
+    return {
+      type,
+      mediaType: data.mediaType,
+      tmdbId: data.tmdbId,
+      currentTime: Number(data.currentTime ?? 0),
+      duration: optionalFiniteNumber(data.duration),
+      paused: typeof data.playing === "boolean" ? !data.playing : undefined,
+      seasonNumber: optionalFiniteNumber(data.season),
+      episodeNumber: optionalFiniteNumber(data.episode),
+    };
+  }
+
   if (!value || typeof value !== "object") {
-    return false;
+    return null;
   }
 
   const event = value as Partial<WatchProgressEvent>;
 
-  return (
+  if (
     typeof event.type === "string" &&
     [
       "kino:progress",
@@ -43,7 +74,11 @@ function isWatchProgressEvent(value: unknown): value is WatchProgressEvent {
     (event.mediaType === "movie" || event.mediaType === "tv") &&
     (typeof event.tmdbId === "string" || typeof event.tmdbId === "number") &&
     typeof event.currentTime === "number"
-  );
+  ) {
+    return event as WatchProgressEvent;
+  }
+
+  return null;
 }
 
 export function WatchProgressListener({ title }: { title: string }) {
@@ -58,16 +93,16 @@ export function WatchProgressListener({ title }: { title: string }) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-        mediaType: event.mediaType,
-        tmdbId: String(event.tmdbId),
-        title,
-        seasonNumber: optionalFiniteNumber(event.seasonNumber),
-        episodeNumber: optionalFiniteNumber(event.episodeNumber),
-        currentTime: optionalFiniteNumber(event.currentTime) ?? 0,
-        duration: optionalFiniteNumber(event.duration),
-        paused: event.paused,
-        completed: event.type === "kino:ended",
-        eventType: event.type.replace("kino:", ""),
+          mediaType: event.mediaType,
+          tmdbId: String(event.tmdbId),
+          title,
+          seasonNumber: optionalFiniteNumber(event.seasonNumber),
+          episodeNumber: optionalFiniteNumber(event.episodeNumber),
+          currentTime: optionalFiniteNumber(event.currentTime) ?? 0,
+          duration: optionalFiniteNumber(event.duration),
+          paused: event.paused,
+          completed: event.type === "kino:ended",
+          eventType: event.type.replace("kino:", ""),
         }),
       });
 
@@ -75,17 +110,19 @@ export function WatchProgressListener({ title }: { title: string }) {
     }
 
     function onMessage(message: MessageEvent) {
-      if (!isWatchProgressEvent(message.data)) {
+      const event = normalizePlayerEvent(message);
+
+      if (!event) {
         return;
       }
 
-      latestEventRef.current = message.data;
+      latestEventRef.current = event;
 
-      const shouldSaveImmediately = message.data.type !== "kino:progress";
+      const shouldSaveImmediately = event.type !== "kino:progress";
       const shouldSaveThrottled = Date.now() - lastSavedAtRef.current >= 10_000;
 
       if (shouldSaveImmediately || shouldSaveThrottled) {
-        save(message.data);
+        save(event);
       }
     }
 

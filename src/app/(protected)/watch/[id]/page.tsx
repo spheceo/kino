@@ -6,6 +6,7 @@ import { WatchProgressListener } from "@/components/watch-progress-listener";
 import { getCurrentUserId } from "@/lib/auth-server";
 import { getContinueWatching } from "@/lib/media-store";
 import { env } from "@/lib/env";
+import { getMovieWatchUrl } from "@/lib/video-provider";
 
 type WatchPageProps = {
   params: Promise<{
@@ -50,8 +51,7 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
   ]);
   const incomingStartSeconds = start && /^\d+$/.test(start) ? Number(start) : null;
   const startSeconds = Math.floor(incomingStartSeconds ?? progress?.progressSeconds ?? 0);
-  const startParam = startSeconds > 0 ? `?start=${encodeURIComponent(String(startSeconds))}` : "";
-  const streamUrl = `https://kino-api.up.railway.app/movie/${encodeURIComponent(id)}${startParam}`;
+  const streamUrl = getMovieWatchUrl({ id, startSeconds });
 
   return (
     <main className="relative h-dvh bg-black">

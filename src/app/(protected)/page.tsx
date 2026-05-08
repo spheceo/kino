@@ -109,11 +109,8 @@ const currentYear = new Date().getFullYear();
 
 const rowConfigs: { title: string; endpoint: string; mediaType: "movie" | "tv" }[] = [
   { title: "Trending", endpoint: "/trending/all/week", mediaType: "movie" },
-  { title: "Action", endpoint: "/discover/movie?with_genres=28&sort_by=popularity.desc", mediaType: "movie" },
-  { title: "Comedy", endpoint: "/discover/movie?with_genres=35&sort_by=popularity.desc", mediaType: "movie" },
   { title: "Animation", endpoint: "/discover/movie?with_genres=16&sort_by=popularity.desc", mediaType: "movie" },
   { title: "Binge-Worthy TV", endpoint: "/discover/tv?sort_by=popularity.desc", mediaType: "tv" },
-  { title: "New This Year", endpoint: `/discover/movie?primary_release_year=${currentYear}&sort_by=popularity.desc`, mediaType: "movie" },
 ];
 
 export default function Home() {
@@ -132,8 +129,9 @@ export default function Home() {
         ))}
       </div>
 
-      <footer className="px-10 py-10 text-sm text-white/45">
-        &copy; {currentYear} Kino, All Rights Reserved
+      <footer className="flex items-center gap-6 px-10 py-10 text-sm text-white/35">
+        <span>&copy; {currentYear} Kino</span>
+        <Link href="/legal" className="cursor-pointer transition-colors hover:text-white/60">Legal</Link>
       </footer>
     </div>
   );

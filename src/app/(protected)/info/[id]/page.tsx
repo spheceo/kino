@@ -148,7 +148,7 @@ export default async function InfoPage({
           <div className="flex flex-col gap-3">
             <h2 className="text-xl font-semibold text-white/50">GENRES</h2>
             <div className="flex flex-wrap gap-3">
-              {film.genres.map((genre) => (
+              {film.genres.slice(0, 3).map((genre) => (
                 <div
                   className="rounded-full bg-[#25252570] px-4 py-2 backdrop-blur"
                   key={genre.id}

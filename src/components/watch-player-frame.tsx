@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { vidfastOrigins, videoProviderConfig } from "@/lib/video-provider";
 
 export function WatchPlayerFrame({
   src,
@@ -18,12 +19,15 @@ export function WatchPlayerFrame({
   const shellRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [copyUrl, setCopyUrl] = useState("");
+  const latestPlayingRef = useRef(false);
   const iframeSrc = useMemo(() => {
     const url = new URL(src);
     if (copyUrl) {
       url.searchParams.set("copyUrl", copyUrl);
     }
-    url.searchParams.set("title", title);
+    if (videoProviderConfig.provider !== "vidfast") {
+      url.searchParams.set("title", title);
+    }
     return url.toString();
   }, [copyUrl, src, title]);
 
@@ -32,6 +36,14 @@ export function WatchPlayerFrame({
     shellRef.current?.focus();
 
     function togglePlayback() {
+      if (videoProviderConfig.provider === "vidfast") {
+        iframeRef.current?.contentWindow?.postMessage(
+          { command: latestPlayingRef.current ? "pause" : "play" },
+          "*",
+        );
+        return;
+      }
+
       iframeRef.current?.contentWindow?.postMessage(
         { type: "kino:toggle-play" },
         "*",
@@ -67,12 +79,26 @@ export function WatchPlayerFrame({
     }
 
     function handleMessage(event: MessageEvent) {
-      if (event.data?.type !== "kino:episode-changed" || mediaType !== "tv") {
+      if (event.data?.type === "PLAYER_EVENT" && vidfastOrigins.includes(event.origin)) {
+        latestPlayingRef.current = Boolean(event.data.data?.playing);
+      }
+
+      const isKinoEpisodeChanged = event.data?.type === "kino:episode-changed";
+      const isVidfastTvEvent =
+        event.data?.type === "PLAYER_EVENT" &&
+        vidfastOrigins.includes(event.origin) &&
+        event.data.data?.mediaType === "tv";
+
+      if ((!isKinoEpisodeChanged && !isVidfastTvEvent) || mediaType !== "tv") {
         return;
       }
 
-      const seasonNumber = Number(event.data.seasonNumber);
-      const episodeNumber = Number(event.data.episodeNumber);
+      const seasonNumber = Number(
+        isVidfastTvEvent ? event.data.data?.season : event.data.seasonNumber,
+      );
+      const episodeNumber = Number(
+        isVidfastTvEvent ? event.data.data?.episode : event.data.episodeNumber,
+      );
 
       if (!Number.isFinite(seasonNumber) || !Number.isFinite(episodeNumber)) {
         return;
@@ -112,7 +138,7 @@ export function WatchPlayerFrame({
         src={iframeSrc}
         title="Kino video player"
         className="h-full w-full border-0"
-        allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+        allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
         allowFullScreen
         onLoad={() => {
           setIsLoaded(true);

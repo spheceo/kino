@@ -111,7 +111,7 @@ function ContinueWatchingCard({
         <Link
           href={href}
           prefetch
-          className="relative block aspect-video overflow-hidden rounded-xl bg-white/[0.06] shadow-[0_12px_30px_rgba(0,0,0,0.28)]"
+          className="relative block aspect-video cursor-pointer overflow-hidden rounded-xl bg-white/[0.06] shadow-[0_12px_30px_rgba(0,0,0,0.28)]"
         >
           {backdropPath ? (
             <img

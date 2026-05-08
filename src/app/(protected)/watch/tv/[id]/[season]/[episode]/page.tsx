@@ -6,6 +6,7 @@ import { WatchProgressListener } from "@/components/watch-progress-listener";
 import { getCurrentUserId } from "@/lib/auth-server";
 import { getContinueWatching } from "@/lib/media-store";
 import { env } from "@/lib/env";
+import { getTvWatchUrl } from "@/lib/video-provider";
 
 type WatchTvPageProps = {
   params: Promise<{
@@ -57,8 +58,7 @@ export default async function WatchTvPage({
   ]);
   const incomingStartSeconds = start && /^\d+$/.test(start) ? Number(start) : null;
   const startSeconds = Math.floor(incomingStartSeconds ?? progress?.progressSeconds ?? 0);
-  const startParam = startSeconds > 0 ? `?start=${encodeURIComponent(String(startSeconds))}` : "";
-  const streamUrl = `https://kino-api.up.railway.app/tv/${encodeURIComponent(id)}/${encodeURIComponent(season)}/${encodeURIComponent(episode)}${startParam}`;
+  const streamUrl = getTvWatchUrl({ id, season, episode, startSeconds });
 
   return (
     <main className="relative h-dvh bg-black">

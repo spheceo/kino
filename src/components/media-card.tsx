@@ -29,7 +29,7 @@ export default function MediaCard({
       href={href}
       onMouseEnter={() => prefetchStream(mediaType, id)}
       onFocus={() => prefetchStream(mediaType, id)}
-      className={`group relative block aspect-[2/3] overflow-hidden rounded-xl border border-[#090909] bg-[#232323] ${className}`}
+      className={`group relative block aspect-[2/3] cursor-pointer overflow-hidden rounded-xl border border-[#090909] bg-[#232323] ${className}`}
     >
       {posterPath ? (
         <Image

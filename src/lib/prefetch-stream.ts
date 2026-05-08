@@ -1,3 +1,5 @@
+import { videoProviderConfig } from "@/lib/video-provider";
+
 const prefetchedStreams = new Set<string>();
 
 export function prefetchStream(
@@ -6,7 +8,7 @@ export function prefetchStream(
   season = 1,
   episode = 1,
 ) {
-  if (!mediaType) return;
+  if (!mediaType || !videoProviderConfig.prefetchEnabled) return;
 
   const key = `${mediaType}:${id}:${season}:${episode}`;
   if (prefetchedStreams.has(key)) return;

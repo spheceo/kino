@@ -116,12 +116,8 @@ const currentYear = new Date().getFullYear();
 
 const rowConfigs = [
   { title: "Popular TV Shows", endpoint: "/tv/popular" },
-  { title: "Airing Today", endpoint: "/tv/airing_today" },
-  { title: "On The Air", endpoint: "/tv/on_the_air" },
-  { title: "Top Rated TV", endpoint: "/tv/top_rated" },
   { title: "Binge-Worthy TV", endpoint: "/discover/tv?sort_by=popularity.desc" },
-  { title: "Comedy TV", endpoint: "/discover/tv?with_genres=35&sort_by=popularity.desc" },
-  { title: "Drama TV", endpoint: "/discover/tv?with_genres=18&sort_by=popularity.desc" },
+  { title: "Top Rated TV", endpoint: "/tv/top_rated" },
 ];
 
 export default function TvPage() {
@@ -140,8 +136,9 @@ export default function TvPage() {
         ))}
       </div>
 
-      <footer className="px-10 py-10 text-sm text-white/45">
-        &copy; {currentYear} Kino, All Rights Reserved
+      <footer className="flex items-center gap-6 px-10 py-10 text-sm text-white/35">
+        <span>&copy; {currentYear} Kino</span>
+        <Link href="/legal" className="cursor-pointer transition-colors hover:text-white/60">Legal</Link>
       </footer>
     </div>
   );
